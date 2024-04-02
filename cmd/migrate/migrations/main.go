@@ -1,8 +1,6 @@
 package main
 
 import (
-	"database/sql"
-	"github.com/abbasfisal/golang-ecommerce/cmd/api"
 	"github.com/abbasfisal/golang-ecommerce/config"
 	"github.com/abbasfisal/golang-ecommerce/db"
 	"github.com/go-sql-driver/mysql"
@@ -11,7 +9,7 @@ import (
 
 func main() {
 
-	db, err := db.NewMysqlStorage(mysql.Config{
+	_, err := db.NewMysqlStorage(mysql.Config{
 		User:                 config.Envs.DBUser,
 		Passwd:               config.Envs.DBPassword,
 		Net:                  "tcp",
@@ -21,23 +19,7 @@ func main() {
 		AllowNativePasswords: true,
 	})
 
-	CheckDb(db)
-
 	if err != nil {
 		log.Fatal(err)
 	}
-	server := api.NewAPIServer(":8080", db)
-
-	if err := server.Run(); err != nil {
-		log.Fatal(err)
-	}
-
-}
-
-func CheckDb(db *sql.DB) {
-	err := db.Ping()
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Println("Db: successfully connected ")
 }

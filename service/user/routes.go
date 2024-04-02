@@ -1,0 +1,67 @@
+package user
+
+import (
+	"fmt"
+	"github.com/abbasfisal/golang-ecommerce/service/auth"
+	"github.com/abbasfisal/golang-ecommerce/types"
+	"github.com/abbasfisal/golang-ecommerce/utils"
+	"github.com/go-playground/validator/v10"
+	"github.com/gorilla/mux"
+	"net/http"
+)
+
+type Handler struct {
+	store types.UserStore
+}
+
+func NewHandler(store types.UserStore) *Handler {
+	return &Handler{store: store}
+}
+
+func (h *Handler) RegisterRoutes(router *mux.Router) {
+	router.HandleFunc("/login", h.handleLogin).Methods("POST")
+	router.HandleFunc("/login", h.handleRegister).Methods("POST")
+}
+
+func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
+
+	// get json payload
+	var payload types.RegisterUserPayload
+	if err := utils.ParseJson(r, payload); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err)
+	}
+
+	//validate
+	if err := utils.Validate.Struct(payload); err != nil {
+		errV := err.(validator.ValidationErrors)
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid payload %v", errV))
+		return
+	}
+	//check if user exist
+	_, err := h.store.GetUserByEmail(payload.Email)
+	//exists
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("user with email %s already exists", payload.Email))
+		return
+	}
+	//not exist
+	hashedPass, _ := auth.HashPassword(payload.Password)
+
+	err = h.store.CreateUser(types.User{
+		FirstName: payload.FirstName,
+		LastName:  payload.LastName,
+		Email:     payload.Email,
+		Password:  hashedPass,
+	})
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	utils.WriteJson(w, http.StatusCreated, nil)
+
+}
